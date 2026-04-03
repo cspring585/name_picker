@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Picker Pro</title>
-    <link rel="manifest" href="data:application/json;base64,ewogICJkZWZhdWx0X2xvY2FsZSI6ICJlbiIsCiAgIm5hbWUiOiAiU3R1ZGVudCBQaWNrZXIiLAogICJzaG9ydF9uYW1lIjogIlBpY2tlciIsCiAgImRlc2NyaXB0aW9uIjogIkEgY2xhc3Nyb29tIHdoZWVsIHBpY2tlciIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjZjRkNTRmIiwKICAidGhlbWVfY29sb3ciOiAiIzM0OThkYiIKfQ==">
+    <title>Name Picker</title>
+    <link rel="manifest" href="data:application/json;base64,ewogICJkZWZhdWx0X2xvY2FsZSI6ICJlbiIsCiAgIm5hbWUiOiAiTmFtZSBQaWNrZXIiLAogICJzaG9ydF9uYW1lIjogIlBpY2tlciIsCiAgImRlc2NyaXB0aW9uIjogIkEgY2xhc3Nyb29tIHdoZWVsIHBpY2tlciIsCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjZjRkNTRmIiwKICAidGhlbWVfY29sb3ciOiAiIzM0OThkYiIKfQ==">
     
     <style>
         :root {
@@ -14,6 +14,7 @@
             --error: #e74c3c;
             --gray: #ecf0f1;
             --white: #ffffff;
+            --text-light: #7f8c8d;
         }
 
         body {
@@ -58,6 +59,13 @@
 
         .sidebar.collapsed { width: 0; min-width: 0; padding: 0; margin: 0; border: none; opacity: 0; pointer-events: none; }
 
+        .directions {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-bottom: 5px;
+            line-height: 1.4;
+        }
+
         .input-group { display: flex; flex-direction: column; gap: 8px; }
         input[type="text"] {
             padding: 12px; border: 2px solid var(--gray);
@@ -82,26 +90,43 @@
             min-width: 0;
         }
 
+        .wheel-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .wheel-header h1 {
+            margin: 0;
+            color: var(--dark);
+            font-size: 1.8rem;
+        }
+
+        .wheel-header p {
+            margin: 5px 0 0 0;
+            color: var(--text-light);
+            font-size: 1rem;
+        }
+
         .controls-row { position: absolute; top: 0; left: 0; z-index: 200; display: flex; gap: 10px; }
         .toggle-btn { background: var(--dark); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         
         .canvas-wrapper { 
             position: relative; 
-            height: 70vh;
-            width: 70vh;
+            height: 60vh;
+            width: 60vh;
             max-width: 100%;
             aspect-ratio: 1 / 1; 
         }
         
         #wheelCanvas {
             width: 100%; height: 100%; border-radius: 50%;
-            transition: transform 10s cubic-bezier(0.1, 0, 0.1, 1); /* 10s SPIN TIME */
+            transition: transform 10s cubic-bezier(0.1, 0, 0.1, 1);
             border: 10px solid #fff;
             box-shadow: 0 0 30px rgba(0,0,0,0.1);
         }
 
         .arrow {
-            position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
+            position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
             width: 0; height: 0; border-left: 20px solid transparent;
             border-right: 20px solid transparent; border-top: 40px solid var(--error);
             z-index: 100; filter: drop-shadow(0 4px 2px rgba(0,0,0,0.2));
@@ -117,7 +142,7 @@
 
         #spinBtn:disabled { background: #95a5a6; }
 
-        /* --- CENTERED WINNER OVERLAY --- */
+        /* Center Winner Overlay */
         #winnerOverlay {
             position: absolute;
             top: 50%;
@@ -142,13 +167,13 @@
             font-size: clamp(2.5rem, 8vh, 5rem);
             font-weight: 900;
             color: var(--success);
-            cursor: pointer; /* Indicates it can be clicked to dismiss */
+            cursor: pointer;
             animation: celebrate 0.5s infinite alternate;
         }
 
         @keyframes celebrate { from { transform: scale(1); } to { transform: scale(1.1); } }
         
-        .info { position: absolute; bottom: 0; font-size: 0.9rem; color: #7f8c8d; }
+        .info { position: absolute; bottom: -20px; font-size: 0.9rem; color: var(--text-light); }
         .backup-controls { display: flex; flex-wrap: wrap; gap: 5px; justify-content: space-between; margin-top: 10px; }
         .backup-btn { font-size: 0.7rem; padding: 5px; cursor: pointer; background: #eee; border: 1px solid #ccc; border-radius: 4px; }
     </style>
@@ -158,6 +183,7 @@
 <div class="container">
     <div class="sidebar" id="sidebar">
         <h2>Student List</h2>
+        <p class="directions">Add names one at a time or paste a list separated by commas. Use checkboxes to include or exclude names from the wheel.</p>
         <div class="input-group">
             <input type="text" id="nameIn" placeholder="Enter name(s)...">
             <button class="add-btn" onclick="addName()">Add to Wheel</button>
@@ -177,6 +203,11 @@
             <button class="toggle-btn" onclick="toggleSidebar()">☰ Toggle List</button>
         </div>
 
+        <div class="wheel-header">
+            <h1>Random Name Picker</h1>
+            <p>Press SPIN to choose a lucky student!</p>
+        </div>
+
         <div id="winnerOverlay" onclick="dismissWinner()">
             <div id="winnerName"></div>
         </div>
@@ -192,10 +223,10 @@
 </div>
 
 <script>
-    let masterList = JSON.parse(localStorage.getItem('picker_vFinal_v3')) || [];
+    let masterList = JSON.parse(localStorage.getItem('picker_vFinal_v4')) || [];
     let pool = []; 
     let rotation = 0;
-    let winnerTimer = null; // Track the auto-hide timer
+    let winnerTimer = null;
     const colors = ['#3498db', '#9b59b6', '#e67e22', '#1abc9c', '#f1c40f', '#e74c3c', '#2c3e50'];
 
     const inputField = document.getElementById('nameIn');
@@ -219,7 +250,7 @@
 
     function toggleActive(idx) { masterList[idx].active = !masterList[idx].active; resetPool(); render(); }
     function remove(idx) { masterList.splice(idx, 1); resetPool(); render(); }
-    function clearAll() { if(confirm("Clear all names?")) { masterList = []; resetPool(); render(); } }
+    function clearAll() { if(confirm("Clear all names from your local storage?")) { masterList = []; resetPool(); render(); } }
     
     function exportList() {
         if(masterList.length === 0) return alert("List is empty!");
@@ -255,9 +286,9 @@
         masterList.forEach((s, i) => {
             listUI.innerHTML += `<div class="student-item"><span><input type="checkbox" ${s.active ? 'checked' : ''} onchange="toggleActive(${i})"> <span style="text-decoration: ${s.active ? 'none' : 'line-through'}">${s.name}</span></span><button style="border:none; background:none; color:red; cursor:pointer;" onclick="remove(${i})">&times;</button></div>`;
         });
-        localStorage.setItem('picker_vFinal_v3', JSON.stringify(masterList));
+        localStorage.setItem('picker_vFinal_v4', JSON.stringify(masterList));
         draw();
-        document.getElementById('poolStatus').innerText = `Unpicked: ${pool.length} | Active: ${masterList.filter(s => s.active).length}`;
+        document.getElementById('poolStatus').innerText = `Unpicked: ${pool.length} | Active Total: ${masterList.filter(s => s.active).length}`;
     }
 
     function draw() {
@@ -311,17 +342,13 @@
         
         document.getElementById('wheelCanvas').style.transform = `rotate(${rotation}deg)`;
 
-        // WAIT 10 SECONDS FOR SPIN TO FINISH
         setTimeout(() => {
             pool.splice(winnerIndex, 1);
             winnerNameDiv.innerText = `✨ ${winnerName} ✨`;
             overlay.classList.add('show');
             btn.disabled = false;
             document.getElementById('poolStatus').innerText = `Unpicked: ${pool.length} | Active: ${masterList.filter(s => s.active).length}`;
-
-            // AUTOMATICALLY HIDE AFTER 15 SECONDS
             winnerTimer = setTimeout(dismissWinner, 15000);
-
         }, 10000); 
     }
 
