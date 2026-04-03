@@ -53,7 +53,7 @@
             display: flex;
             flex-direction: column;
             gap: 15px;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
             overflow: hidden;
         }
 
@@ -142,7 +142,7 @@
 
         #spinBtn:disabled { background: #95a5a6; }
 
-        /* Center Winner Overlay */
+        /* Winner Overlay */
         #winnerOverlay {
             position: absolute;
             top: 50%;
@@ -185,10 +185,10 @@
         <h2>Student List</h2>
         <p class="directions">Add names one at a time or paste a list separated by commas. Use checkboxes to include or exclude names from the wheel.</p>
         <div class="input-group">
-            <input type="text" id="nameIn" placeholder="Enter name(s)...">
+            <input type="text" id="nameIn" placeholder="Enter name(s)..." oninput="resetSidebarTimer()">
             <button class="add-btn" onclick="addName()">Add to Wheel</button>
         </div>
-        <div class="list-container" id="uiList"></div>
+        <div class="list-container" id="uiList" onscroll="resetSidebarTimer()"></div>
         
         <div class="backup-controls">
             <button class="backup-btn" onclick="exportList()">💾 Export</button>
@@ -200,7 +200,7 @@
 
     <div class="wheel-box">
         <div class="controls-row">
-            <button class="toggle-btn" onclick="toggleSidebar()">☰ Toggle List</button>
+            <button class="toggle-btn" onclick="toggleSidebar()" onmouseover="resetSidebarTimer()">☰ Toggle List</button>
         </div>
 
         <div class="wheel-header">
@@ -223,20 +223,48 @@
 </div>
 
 <script>
-    let masterList = JSON.parse(localStorage.getItem('picker_vFinal_v4')) || [];
+    let masterList = JSON.parse(localStorage.getItem('picker_vFinal_v5')) || [];
     let pool = []; 
     let rotation = 0;
     let winnerTimer = null;
+    let sidebarTimer = null; // Auto-hide timer
     const colors = ['#3498db', '#9b59b6', '#e67e22', '#1abc9c', '#f1c40f', '#e74c3c', '#2c3e50'];
 
     const inputField = document.getElementById('nameIn');
     inputField.addEventListener("keydown", (e) => { if (e.key === "Enter") addName(); });
 
-    function init() { resetPool(); render(); }
+    function init() { 
+        resetPool(); 
+        render(); 
+        resetSidebarTimer(); // Start the first timer
+    }
+
+    // --- SIDEBAR AUTO-HIDE LOGIC ---
+    function resetSidebarTimer() {
+        // Clear existing timer
+        if (sidebarTimer) clearTimeout(sidebarTimer);
+        
+        const sidebar = document.getElementById('sidebar');
+        // If sidebar is currently collapsed, we don't start a hide timer
+        if (sidebar.classList.contains('collapsed')) return;
+
+        // Set a new 30-second timer
+        sidebarTimer = setTimeout(() => {
+            const sidebar = document.getElementById('sidebar');
+            if (!sidebar.classList.contains('collapsed')) {
+                toggleSidebar();
+            }
+        }, 30000);
+    }
 
     function toggleSidebar() {
-        document.getElementById('sidebar').classList.toggle('collapsed');
-        setTimeout(draw, 450);
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.toggle('collapsed');
+        // If we just opened it, start the timer
+        if (!sidebar.classList.contains('collapsed')) {
+            resetSidebarTimer();
+        }
+        setTimeout(draw, 550);
     }
 
     function addName() {
@@ -245,12 +273,34 @@
         rawInput.split(',').forEach(name => {
             if (name.trim()) masterList.push({ name: name.trim(), active: true });
         });
-        inputField.value = ''; resetPool(); render();
+        inputField.value = ''; 
+        resetPool(); 
+        render();
+        resetSidebarTimer(); // Reset timer when name is added
     }
 
-    function toggleActive(idx) { masterList[idx].active = !masterList[idx].active; resetPool(); render(); }
-    function remove(idx) { masterList.splice(idx, 1); resetPool(); render(); }
-    function clearAll() { if(confirm("Clear all names from your local storage?")) { masterList = []; resetPool(); render(); } }
+    function toggleActive(idx) { 
+        masterList[idx].active = !masterList[idx].active; 
+        resetPool(); 
+        render(); 
+        resetSidebarTimer();
+    }
+    
+    function remove(idx) { 
+        masterList.splice(idx, 1); 
+        resetPool(); 
+        render(); 
+        resetSidebarTimer();
+    }
+    
+    function clearAll() { 
+        if(confirm("Clear all names from your local storage?")) { 
+            masterList = []; 
+            resetPool(); 
+            render(); 
+            resetSidebarTimer();
+        } 
+    }
     
     function exportList() {
         if(masterList.length === 0) return alert("List is empty!");
@@ -260,6 +310,7 @@
         a.href = URL.createObjectURL(blob);
         a.download = "student_list.txt";
         a.click();
+        resetSidebarTimer();
     }
 
     function importList(event) {
@@ -276,6 +327,7 @@
         };
         reader.readAsText(file);
         event.target.value = "";
+        resetSidebarTimer();
     }
 
     function resetPool() { pool = masterList.filter(s => s.active).map(s => s.name); }
@@ -286,7 +338,7 @@
         masterList.forEach((s, i) => {
             listUI.innerHTML += `<div class="student-item"><span><input type="checkbox" ${s.active ? 'checked' : ''} onchange="toggleActive(${i})"> <span style="text-decoration: ${s.active ? 'none' : 'line-through'}">${s.name}</span></span><button style="border:none; background:none; color:red; cursor:pointer;" onclick="remove(${i})">&times;</button></div>`;
         });
-        localStorage.setItem('picker_vFinal_v4', JSON.stringify(masterList));
+        localStorage.setItem('picker_vFinal_v5', JSON.stringify(masterList));
         draw();
         document.getElementById('poolStatus').innerText = `Unpicked: ${pool.length} | Active Total: ${masterList.filter(s => s.active).length}`;
     }
@@ -347,7 +399,7 @@
             winnerNameDiv.innerText = `✨ ${winnerName} ✨`;
             overlay.classList.add('show');
             btn.disabled = false;
-            document.getElementById('poolStatus').innerText = `Unpicked: ${pool.length} | Active: ${masterList.filter(s => s.active).length}`;
+            document.getElementById('poolStatus').innerText = `Unpicked: ${pool.length} | Active Total: ${masterList.filter(s => s.active).length}`;
             winnerTimer = setTimeout(dismissWinner, 15000);
         }, 10000); 
     }
