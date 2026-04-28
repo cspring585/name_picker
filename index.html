@@ -61,7 +61,7 @@
             position: relative;
         }
 
-        /* --- SIDEBAR BASE --- */
+        /* --- SIDEBAR --- */
         .sidebar {
             width: 300px;
             min-width: 300px;
@@ -69,6 +69,7 @@
             display: flex;
             flex-direction: column; 
             height: 100%;
+            max-height: 100%; 
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             padding: 1.5rem;
             box-sizing: border-box;
@@ -78,23 +79,38 @@
 
         .sidebar.collapsed { width: 0; min-width: 0; padding: 0; border: none; opacity: 0; pointer-events: none; }
 
-        /* --- MOBILE DRAWER FIX --- */
+        .mobile-close-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            color: var(--text-light);
+            cursor: pointer;
+            line-height: 1;
+            padding: 0;
+            margin-top: -5px;
+        }
+
         @media (max-width: 768px) {
             .sidebar {
                 position: absolute;
                 left: 0;
                 top: 0;
-                box-shadow: 5px 0 25px rgba(0,0,0,0.2);
+                bottom: 0;
+                box-shadow: 5px 0 25px rgba(0,0,0,0.3);
                 transform: translateX(0);
+                z-index: 1000; /* Force above the toggle button */
             }
             .sidebar.collapsed {
                 transform: translateX(-100%);
                 opacity: 0;
             }
+            .mobile-close-btn { display: block; } /* Show close button on mobile */
         }
 
         .sidebar-header { flex-shrink: 0; }
-        .sidebar-header h2 { margin-top: 0; }
+        .header-title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .sidebar-header h2 { margin: 0; font-size: 1.4rem; }
         .directions { font-size: 0.8rem; color: var(--text-light); margin-bottom: 10px; }
         
         .input-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
@@ -107,7 +123,7 @@
         .add-btn { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold; }
 
         .list-container { 
-            flex: 1 1 auto; 
+            flex: 1 1 0; 
             overflow-y: auto; 
             border: 1px solid var(--gray); 
             border-radius: 12px; 
@@ -178,9 +194,10 @@
 
         /* WINNER UI */
         #winnerOverlay {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center;
-            z-index: 2000; opacity: 0; transition: opacity 0.5s ease; pointer-events: none; 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 130%; z-index: 2000; text-align: center;
+            opacity: 0; transition: opacity 0.5s ease; pointer-events: none; 
+            display: flex; justify-content: center; align-items: center;
         }
         #winnerOverlay.show { opacity: 1; pointer-events: auto; }
         #winnerName {
@@ -202,7 +219,10 @@
 <div class="container">
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <h2>Student List</h2>
+            <div class="header-title-row">
+                <h2>Student List</h2>
+                <button class="mobile-close-btn" onclick="toggleSidebar()">&times;</button>
+            </div>
             <p class="directions">Add names (comma separated). List auto-hides after 30s.</p>
             <div class="input-group">
                 <input type="text" id="nameIn" placeholder="Enter name(s)..." oninput="resetSidebarTimer()">
@@ -238,18 +258,18 @@
             <div class="arrow"></div>
             <button id="spinBtn" onclick="spin()">SPIN</button>
             <canvas id="wheelCanvas" width="1000" height="1000"></canvas>
+            
+            <div id="winnerOverlay" onclick="dismissWinner()">
+                <div id="winnerName"></div>
+            </div>
         </div>
         
         <p class="info" id="poolStatus"></p>
     </div>
 </div>
 
-<div id="winnerOverlay" onclick="dismissWinner()">
-    <div id="winnerName"></div>
-</div>
-
 <script>
-    let masterList = JSON.parse(localStorage.getItem('picker_final_v12')) || [];
+    let masterList = JSON.parse(localStorage.getItem('picker_final_v15')) || [];
     let isDarkMode = localStorage.getItem('picker_theme') === 'dark';
     let pool = []; 
     let rotation = 0;
@@ -277,7 +297,7 @@
     function resetSidebarTimer() {
         if (sidebarTimer) clearTimeout(sidebarTimer);
         const sidebar = document.getElementById('sidebar');
-        if (sidebar.classList.contains('collapsed')) return;
+        if (sidebar && sidebar.classList.contains('collapsed')) return;
         sidebarTimer = setTimeout(() => {
             if (!sidebar.classList.contains('collapsed')) toggleSidebar();
         }, 30000);
@@ -337,7 +357,7 @@
         masterList.forEach((s, i) => {
             listUI.innerHTML += `<div class="student-item"><span><input type="checkbox" ${s.active ? 'checked' : ''} onchange="toggleActive(${i})"> <span style="text-decoration: ${s.active ? 'none' : 'line-through'}; margin-left: 8px;">${s.name}</span></span><button style="border:none; background:none; color:var(--error); font-size: 1.2rem; cursor:pointer;" onclick="remove(${i})">&times;</button></div>`;
         });
-        localStorage.setItem('picker_final_v12', JSON.stringify(masterList));
+        localStorage.setItem('picker_final_v15', JSON.stringify(masterList));
         draw();
         document.getElementById('poolStatus').innerText = `Unpicked: ${pool.length} | Active Total: ${masterList.filter(s => s.active).length}`;
     }
